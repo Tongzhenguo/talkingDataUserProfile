@@ -12,10 +12,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import os
 from scipy.sparse import csr_matrix, hstack
 
-import os
-os.environ['KERAS_BACKEND'] = 'theano'
-import keras.backend as K
-K.set_image_dim_ordering('th')
+# import os
+# os.environ['KERAS_BACKEND'] = 'theano'
+# import keras.backend as K
+# K.set_image_dim_ordering('th')
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.utils import np_utils
@@ -168,7 +168,7 @@ devicelabels = (deviceapps[['device_id','app']]
                 .merge(gatrain[['trainrow']], how='left', left_index=True, right_index=True)
                 .merge(gatest[['testrow']], how='left', left_index=True, right_index=True)
                 .reset_index())
-devicelabels.head()
+print( devicelabels.head() )
 
 d = devicelabels.dropna(subset=['trainrow'])
 Xtr_label = csr_matrix((np.ones(d.shape[0]), (d.trainrow, d.label)),
@@ -241,7 +241,7 @@ Xte_with_event = csr_matrix((np.ones(gatest.shape[0]),
 ##################
 
 print("# Read App Labels")
-app_lab = pd.read_csv("../input/app_labels.csv")
+app_lab = pd.read_csv("../data/app_labels.csv")
 app_lab = app_lab.groupby("app_id")["label_id"].apply(
     lambda x: " ".join(str(s) for s in x))
 
@@ -249,7 +249,7 @@ app_lab = app_lab.groupby("app_id")["label_id"].apply(
 #   App Events
 ##################
 print("# Read App Events")
-app_ev = pd.read_csv("../input/app_events.csv")
+app_ev = pd.read_csv("../data/app_events.csv")
 app_ev["app_lab"] = app_ev["app_id"].map(app_lab)
 app_ev = app_ev.groupby("event_id")["app_lab"].apply(
     lambda x: " ".join(str(s) for s in x))
@@ -260,7 +260,7 @@ del app_lab
 #     Events
 ##################
 print("# Read Events")
-events = pd.read_csv("../input/events.csv")
+events = pd.read_csv("../data/events.csv")
 events["app_lab"] = events["event_id"].map(app_ev)
 events = events.groupby("device_id")["app_lab"].apply(
     lambda x: " ".join(str(s) for s in x))
@@ -271,7 +271,7 @@ del app_ev
 #   Phone Brand
 ##################
 print("# Read Phone Brand")
-pbd = pd.read_csv("../input/phone_brand_device_model.csv")
+pbd = pd.read_csv("../data/phone_brand_device_model.csv")
 pbd.drop_duplicates('device_id', keep='first', inplace=True)
 
 
@@ -279,7 +279,7 @@ pbd.drop_duplicates('device_id', keep='first', inplace=True)
 #  Train and Test
 ##################
 print("# Generate Train and Test")
-#train = pd.read_csv("../input/gender_age_train.csv")
+#train = pd.read_csv("../data/gender_age_train.csv")
 train = pd.read_csv(os.path.join(datadir,'gender_age_train.csv'), index_col='device_id')
 
 train["dev_id"]=train.index
@@ -295,7 +295,7 @@ print("Before hash: must be zero: ", sum(train.index != gatrain.index))
 #print("Before hash: must be zero: ", sum(train["dev_id"] != gatrain.index))
 
 
-# test = pd.read_csv("../input/gender_age_test.csv",
+# test = pd.read_csv("../data/gender_age_test.csv",
 #                    dtype={'device_id': np.str})
 test = pd.read_csv(os.path.join(datadir,'gender_age_test.csv'), index_col='device_id')
 test["dev_id"]=test.index
@@ -503,7 +503,7 @@ for fold_id in range(1, n_folds + 1):
 
     model = baseline_model(Xtr.shape[1])
     fit = model.fit_generator(generator=batch_generator(Xtr, Ytr_dum, 381, True),
-                              nb_epoch=20,
+                              nb_epoch=1,
                               samples_per_epoch=Xtr.shape[0], verbose=2,
                               validation_data=(Xva.todense(), Yva_dum)
                               )
@@ -522,7 +522,7 @@ for fold_id in range(1, n_folds + 1):
 
     model = baseline_model(Xtr.shape[1])
     fit = model.fit_generator(generator=batch_generator(Xtr, Ytr_dum, 381, True),
-                              nb_epoch=20,
+                              nb_epoch=1,
                               samples_per_epoch=Xtr.shape[0], verbose=2,
                               validation_data=(Xva.todense(), Yva_dum)
                               )
@@ -590,4 +590,3 @@ pred_test_mix[test_id_ne,0:12]=pred_test[test_id_ne,0:12]
 
 submission = pd.DataFrame(pred_test_mix[:,0:25], index = gatest.index, columns=targetencoder.classes_)
 submission.to_csv('../data/keras_cv10_with_bags5_wEvents_AllData_Mix.csv',index=True)
-
